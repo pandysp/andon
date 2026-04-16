@@ -85,7 +85,7 @@ tmux new-session -s andon \
    --dangerously-skip-permissions'
 ```
 
-Note the bridge session ID from Claude Code's greeting line:
+Note the bridge session ID from Claude Code's greeting line (requires `/remote-control` enabled via `/config` globally or in the session):
 ```
 Code in CLI or at https://claude.ai/code/session_XXXXX
 ```
@@ -95,7 +95,7 @@ Do some work in the driver. Then in another terminal:
 ```bash
 cd /your/project
 ANDON_DUMP_PATH=/tmp/andon-obs.json \
-  ./andon-observer.sh andon session_XXXXX --lens quality --delivery print
+  ./andon-observer.sh andon session_XXXXX --lens quality
 ```
 
 `ANDON_DUMP_PATH` is optional on both sides — captures the final API request body for cache debugging. Compare with `diff <(jq '.system' /tmp/andon-drv.json) <(jq '.system' /tmp/andon-obs.json)`.
