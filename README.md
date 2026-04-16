@@ -147,7 +147,7 @@ The preload normalizes 8 differences between interactive (driver) and `--print` 
 | 7 | Strip `gitStatus` | Strip | Memoized at process start, diverges after any git activity |
 | 8 | Strip `<system-reminder>` from tool_results | Strip | Runtime injections not persisted to JSONL |
 
-"Down" = normalize driver to match observer's natural `--print` values. "Up" = normalize observer to match driver's value. "Strip" = remove from both sides — content is volatile or not persisted, so neither side can reliably match it. These are hacks; the [capture approach](#cache--planned-refactor) eliminates the need for all of them.
+"Down" = normalize driver to match observer's natural `--print` values. "Up" = normalize observer to match driver's value. "Strip" = remove from both sides — content is volatile or not persisted, so neither side can reliably match it. These are hacks; the [capture approach](#cache--planned-refactor) should eliminate the need for all of them.
 
 Two env-level requirements on the driver:
 - `CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING=1` — thinking config is part of the cache key; interactive uses `{"type":"adaptive"}`, `--print` uses `{"budget_tokens":63999,"type":"enabled"}`.
@@ -168,7 +168,7 @@ The principled fix is to serialize the driver's exact API request to disk after 
 Plan:
 1. Driver preload writes `{ system, tools, thinking, model, messages }` to `$STATE_DIR/driver-prefix.json` after each API call (already has the fetch hook via `ANDON_DUMP_PATH`).
 2. Observer preload reads this file and replaces its own request with the driver's exact bytes (system, tools, thinking, model, and message prefix up to the fork point).
-3. No normalization needed — byte-identical by construction. Version-independent. Eliminates all 8 current fixes plus any future divergences.
+3. In theory, no normalization needed — byte-identical by construction, version-independent. Should eliminate all 8 current fixes plus any future divergences. Not yet validated.
 
 ### Cache Reference
 
@@ -189,40 +189,15 @@ State is persisted under:
 ${XDG_STATE_HOME:-$HOME/.local/state}/andon-observer/
 ```
 
-## Implementation: Codex (v1) — `codex-companion.sh`
+## Experimental: Codex — `codex-companion.sh`
 
-Same fork-per-epoch architecture, targeting Codex instead of Claude Code.
-
-### Quick Start
+> **Highly experimental.** Same fork-per-epoch idea targeting OpenAI's Codex CLI instead of Claude Code. Included to show the approach is model-agnostic, but this has not been thoroughly tested and may not work reliably.
 
 ```bash
 ./codex-companion.sh start mob
 tmux attach -t mob
 # Do some work, then in another terminal:
 ./codex-companion.sh observe mob --continuous --lens quality
-```
-
-### Driver Shape
-
-```bash
-codex --no-alt-screen --dangerously-bypass-approvals-and-sandbox --model gpt-5.4
-```
-
-### Observer Shape
-
-Default: `gpt-5.4-mini` at low effort. Override with `--observer-model gpt-5.4`.
-
-### Delivery Modes
-
-```bash
-./codex-companion.sh observe mob --continuous --delivery print     # dry-run
-./codex-companion.sh observe mob --continuous --delivery queue      # safe default
-./codex-companion.sh observe mob --continuous --delivery interrupt  # experimental
-```
-
-State is persisted under:
-```
-${XDG_STATE_HOME:-$HOME/.local/state}/codex-companion/
 ```
 
 ## Lenses
